@@ -5,7 +5,6 @@ import lejos.nxt.LCD;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.SensorPort;
-import lejos.nxt.addon.NXTLineLeader;
 
 public class Main {
 
@@ -27,8 +26,6 @@ public class Main {
 	private static LightSensor lightSensor;
 
 	public static void main(String[] args) throws InterruptedException {
-		// TODO Auto-generated method stub
-
 		lightSensor = new LightSensor(SensorPort.S4, true);
 
 		while (true) {
@@ -47,6 +44,7 @@ public class Main {
 				doFeed();
 			}
 			lightSensor.setFloodlight(true);
+			showEmpty(lastFeedTime);
 		}
 	}
 
@@ -57,21 +55,33 @@ public class Main {
 		drawStrings(new String[] { "Spacing ", millisToTimeString(millisBetweenFeedings) }, 0, 5);
 		LCD.drawString("Orange to start!", 0, 7);
 		Button.ENTER.waitForPress();
+	}
 
+	private static void showEmpty(long lastFeedTime) {
+		LCD.clear();
+		LCD.drawString("No food left!", 0, 1);
+		LCD.drawString("Orange to reset!", 0, 7);
+		while (!Button.ENTER.isDown()) {
+			drawStrings(new String[] { "Empty ", millisToTimeString(System.currentTimeMillis() - lastFeedTime) }, 0, 3);
+
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+
+		while (Button.ENTER.isDown())
+			; // Wait for release
 	}
 
 	private static void waitForFeeding(long lastFeedTime) {
 		LCD.clear(3);
-
-		final String foodInString = "Food in ";
-		LCD.drawString(foodInString, 0, 3);
-
 		long elapsed;
 		while ((elapsed = (System.currentTimeMillis() - lastFeedTime)) < millisBetweenFeedings) {
 
-			String timeString = millisToTimeString(millisBetweenFeedings - elapsed);
-
-			LCD.drawString(timeString, foodInString.length(), 3);
+			drawStrings(new String[] { "Food in ", millisToTimeString(millisBetweenFeedings - elapsed) }, 0, 3);
 
 			try {
 				Thread.sleep(100);
@@ -83,11 +93,8 @@ public class Main {
 	}
 
 	private static void doFeed() {
-		final String feedString = "Food time!";
-		final int xPos = LCD.DISPLAY_CHAR_WIDTH / 2 - feedString.length() / 2;
-
 		LCD.clear(3);
-		LCD.drawString(feedString, xPos, 3);
+		drawStringCentered("Food time!", 3);
 
 		moveOneDivision();
 		shake();
@@ -135,6 +142,11 @@ public class Main {
 		Motor.B.rotate(-degrees, true);
 		Motor.C.rotate(degrees);
 		Motor.B.waitComplete();
+	}
+
+	private static void drawStringCentered(String string, int y) {
+		final int xPos = LCD.DISPLAY_CHAR_WIDTH / 2 - string.length() / 2;
+		LCD.drawString(string, xPos, y);
 	}
 
 	private static void drawStrings(String[] strings, int x, int y, boolean addSpace) {
